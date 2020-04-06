@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+
 const API_HOST = 'http://localhost:8000';
 
 let _csrfToken = null;
@@ -58,11 +59,9 @@ class NewPost extends Component {
     }
 
     async handleSubmit(event) {
-        // alert('Post submitted: ' + this.state.value);
         event.preventDefault();
-        // console.log(this.state)
-        await createPost('POST', this.state.post_type, this.state.text);
-        this.setState({show_create: !this.state.show_create});
+        await createPost('POST', this.state.post_type, this.state.text)
+        this.setState({show_create: !this.state.show_create})
     }
 
     render(){

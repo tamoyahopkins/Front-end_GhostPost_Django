@@ -11,7 +11,7 @@ const API_HOST = 'http://localhost:8000';
 
 let _csrfToken = null;
 
-async function getCsrfToken() {
+export async function getCsrfToken() {
     if (_csrfToken === null) {
         const response = await fetch(`${API_HOST}/csrf/`, {
             credentials: 'include',
@@ -37,7 +37,7 @@ async function testRequest(method) {
     return data.result;
 }
 
-async function allPosts(method) {
+export async function allPosts(method) {
     const response = await fetch(`${API_HOST}/api/post/`, {
         method: method,
         headers: (
@@ -80,6 +80,20 @@ async function vote(method, vote_type, id) {
     console.log(data)
     return data;
 }
+async function post_delete(method, u_id) {
+    const response = await fetch(`${API_HOST}/api/post/${u_id}/custom_delete`, {
+        method: method,
+        headers: (
+            method === 'POST'
+                ? { 'X-CSRFToken': await getCsrfToken() }
+                : {}
+        ),
+        credentials: 'include',
+    });
+    const data = await response.json();
+    console.log(data)
+    return data;
+}
 
 
 class GhostPost extends Component {
@@ -90,13 +104,11 @@ class GhostPost extends Component {
             teststate: false,
             show_create: false
         }
-        this.componentDidMount = this.componentDidMount.bind(this)
+        // setInterval(this.updatePosts, 1000);
     }
 
     async componentDidMount() {
         this.setState({
-            testGet: await testRequest('GET'),
-            testPost: await testRequest('POST'),
             allPosts: await allPosts('GET'),
             mostPopular: await mostPopular('GET')
         });
@@ -118,9 +130,17 @@ class GhostPost extends Component {
 
     }
 
-    handle_vote(vote_type, id){
-        vote('POST', vote_type, id).then(this.setState({ testvote: !this.state.testvote }))
+    async handle_vote(vote_type, id){
+        await vote('POST', vote_type, id)
+        await (this.updatePosts())
     }
+
+    updatePosts = async () => { this.setState({ allPosts: await allPosts('GET'), mostPopular: await mostPopular('GET')})};
+
+    handle_delete = async (u_id)=>{
+        await post_delete('GET', u_id)
+        await this.updatePosts()
+    };
 
     get_all = () => {
         let all = this.state.allPosts;
@@ -161,6 +181,8 @@ class GhostPost extends Component {
                     <div>
                     <button value={all[post].id} onClick={()=> {this.handle_vote('vote_up', all[post].id)}}>Likes: {all[post].up}</button>
                     <button onClick={()=> {this.handle_vote('vote_down', all[post].id) }}>Dislikes: {all[post].down}</button>
+                    <button onClick={() => {this.handle_delete(all[post].u_id)}}>Delete</button>
+
                     </div>
                 </div>
             ))
@@ -168,6 +190,7 @@ class GhostPost extends Component {
 
         return result;
     };
+
 
     render() {
         return (
@@ -187,6 +210,7 @@ class GhostPost extends Component {
             </React.Fragment>
         );
     }
+
 }
 
 export default GhostPost;
